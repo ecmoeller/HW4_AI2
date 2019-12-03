@@ -98,7 +98,7 @@ def main():
         stand_devs = []
 
         #TODO loop through c values
-        for c in range(len(c_log_regress)):
+        for c in c_log_regress:
 
             error_rate_log_regress = 0
             stand_dev_log_regress = 0
