@@ -11,18 +11,21 @@ import matplotlib.pyplot as plt
 from sklearn import datasets
 
 from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import Perceptron
+from sklearn.svm import LinearSVC
+from sklearn.neighbors import KNeighborsClassifier
 
-def line_graph(x, y, title):
+def line_graph(x, y, stand_devs, title):
 
     #Graphing
     #plt.plot(x, y)
     n = len(x)
     a = np.arange(n)
-    plt.errorbar(a, y, xerr=0.022, yerr=0.04)
+    plt.errorbar(a, y, yerr=stand_devs)
     plt.title(title)
     plt.xticks(a, x)
-    plt.xlabel('C value')
-    plt.ylabel('error rate')
+    plt.xlabel('Hyperparameter')
+    plt.ylabel('Error rate')
     plt.show()
 
 def bar_graph(x, y, title):
@@ -45,46 +48,53 @@ def logistic_regression(train_data, train_labels, test_data, test_labels, hyperp
 
     if(index == 0):
         #Fit the model
-        clf = LogisticRegression(C=hyperparam, solver='lbfgs', multi_class='ovr').fit(train_data, train_labels)
+        clf = LogisticRegression(max_iter=1000, C=hyperparam, solver='lbfgs', multi_class='ovr').fit(train_data, train_labels)
     else:
         clf = LogisticRegression(C=hyperparam, solver='lbfgs', multi_class='multinomial').fit(train_data, train_labels)
 
     predicted_labels = clf.predict(test_data)
-    
-    mean_error_rate, mean_stand_dev = calculate_mean_and_stand(predicted_labels, test_labels)
 
-    return mean_error_rate, mean_stand_dev
+    mean_error_rate = 1 - clf.score(test_data, test_labels)
+    
+
+
+    return mean_error_rate
 
 def perceptron(train_data, train_labels, test_data, test_labels, hyperparam, index):
-    penalty = 12
 
-    print("Perceptron")
+    clf = Perceptron(alpha=hyperparam, penalty="l2").fit(train_data, train_labels)
+    
+    predicted_labels = clf.predict(test_data)
+    mean_error_rate = 1 - clf.score(test_data, test_labels)
+
+
+
+    return mean_error_rate
+
 
 
 def svm(train_data, train_labels, test_data, test_labels, hyperparam, index):
-    print("svm")
+
+    clf = LinearSVC(C=hyperparam).fit(train_data, train_labels)
+
+    predicted_labels = clf.predict(test_data)
+    
+    mean_error_rate = 1 - clf.score(test_data, test_labels)
+
+
+    return mean_error_rate
 
 def knn(train_data, train_labels, test_data, test_labels, hyperparam, index):
-    print("knn")
+    k = 6 * hyperparam + 1
 
-def calculate_mean_and_stand(predicted_labels, test_labels):
-    #Calulate mean predicted value
-    total_error_rate = 0
-    for i in range(len(predicted_labels)):
-        error = abs(test_labels[i] - predicted_labels[i])
-        total_error_rate = total_error_rate + error
+    clf = KNeighborsClassifier(n_neighbors=k).fit(train_data, train_labels)
 
-    mean_error_rate = total_error_rate / len(predicted_labels)
+    predicted_labels = clf.predict(test_data)
 
-    #TODO: Calculate standard deviation
-    total_stand_dev = 0
+    mean_error_rate = 1 - clf.score(test_data, test_labels)
+    
+    return mean_error_rate
 
-
-    mean_stand_dev = total_stand_dev / len(predicted_labels)
-
-    #return mean error rate and standard deviation
-
-    return mean_error_rate, mean_stand_dev
     
 def divide_data(data, titles, hyperparams, algo):
 
@@ -96,7 +106,7 @@ def divide_data(data, titles, hyperparams, algo):
         error_rates = []
         stand_devs = []
 
-        #TODO loop through c values
+        #loop through hyperparameters values
         for h in hyperparams:
 
             #Create window for cross validation
@@ -109,21 +119,21 @@ def divide_data(data, titles, hyperparams, algo):
 
 
             error_rate_log_regress = 0
-            stand_dev_log_regress = 0
+            error_rate_stand_dev = []
 
             #5 fold cross validation
             for j in range(5):
                 #print(dataset.data)
-                test_data = np.array(dataset.data[window - initial_window: window])
-                test_labels = np.array(dataset.target[window - initial_window: window])
+                test_data = np.array(dataset.data[int(window - initial_window): int(window)])
+                test_labels = np.array(dataset.target[int(window - initial_window): int(window)])
 
                 print("Length of test", len(test_data))
 
-                part1train_data = np.array(dataset.data[0 :window - initial_window])
-                part2train_data = np.array(dataset.data[window:])
+                part1train_data = np.array(dataset.data[0 :int(window - initial_window)])
+                part2train_data = np.array(dataset.data[int(window):])
 
-                part1train_labels = np.array(dataset.target[0 :window - initial_window])
-                part2train_labels = np.array(dataset.target[window:])
+                part1train_labels = np.array(dataset.target[0 :int(window - initial_window)])
+                part2train_labels = np.array(dataset.target[int(window):])
 
                 train_data = np.concatenate((part1train_data, part2train_data))
                 train_labels = np.concatenate((part1train_labels, part2train_labels))
@@ -132,31 +142,43 @@ def divide_data(data, titles, hyperparams, algo):
 
                 print("Length of train", len(train_data))
 
-                #TODO: call the correct algo
+                algo_type = ""
+                #Call the correct algo
                 if(algo == "log"):
-                    error_rate, stand_dev = logistic_regression(train_data, train_labels, test_data, test_labels, h, i)
+                    algo_type = "Logistic Regression"
+                    error_rate = logistic_regression(train_data, train_labels, test_data, test_labels, h, i)
                 
                 elif(algo == "percep"):
-                    error_rate, stand_dev = perceptron(train_data, train_labels, test_data, test_labels, h, i)
+                    algo_type = "Perceptron"
+                    error_rate = perceptron(train_data, train_labels, test_data, test_labels, h, i)
                 
                 elif(algo == "svm"):
-                    error_rate, stand_dev = svm(train_data, train_labels, test_data, test_labels, h, i)
+                    algo_type = "SVM"
+                    error_rate = svm(train_data, train_labels, test_data, test_labels, h, i)
 
                 else:
-                    error_rate, stand_dev = knn(train_data, train_labels, test_data, test_labels, h, i)
+                    algo_type = "KNN"
+                    error_rate = knn(train_data, train_labels, test_data, test_labels, h, i)
 
                 error_rate_log_regress = error_rate_log_regress + error_rate
-                stand_dev_log_regress = stand_dev_log_regress + stand_dev
+                error_rate_stand_dev.append(error_rate)
 
                 window += initial_window
             
-            #Calculate mean error rate and stand dev per c value
+            #Calculate mean error rate 
             mean_error_rate = error_rate_log_regress / 5
-            mean_stand_dev = stand_dev_log_regress / 5
+
+            #Calculate stand dev per c value
+            squared_diffs = []
+            for k in range(len(error_rate_stand_dev)):
+                value = (error_rate_stand_dev[k] - mean_error_rate) * (error_rate_stand_dev[k] - mean_error_rate)
+                squared_diffs.append(value)
+            
+            stand_dev = math.sqrt(sum(squared_diffs) / len(squared_diffs))
 
             #Add to the arrays that will be used to graph
             error_rates.append(mean_error_rate)
-            stand_devs.append(mean_stand_dev)
+            stand_devs.append(stand_dev)
                 
         print("What are the mean_error_rates", error_rates)
         print("What are the stand_devs", stand_devs)
@@ -164,8 +186,8 @@ def divide_data(data, titles, hyperparams, algo):
 
         #plot mean classiﬁcation error rate and standard deviation (as error bars) across the 5 folds
         #points on the plots are hyperparameters
-        title = "Mean classification error rate for " + titles[i]
-        line_graph(hyperparams, error_rates, title)
+        title = "Mean classification error rate for " + titles[i] + " for " + algo_type
+        line_graph(hyperparams, error_rates, stand_devs, title)
 
 
 
@@ -189,17 +211,16 @@ def main():
     divide_data(data, titles, c_log_regress, "log")   
 
     #PERCEPTRON
-    penalty = 12
-    alpha = [.00001, .0001, .001, .01, .1, 1, 10, 100, 1000]
-    divide_data(data, titles, alpha, "percep")
+    #alpha = [.00001, .0001, .001, .01, .1, 1, 10, 100, 1000]
+    #divide_data(data, titles, alpha, "percep")
 
     #SVM
-    c_svm = [.00001, .0001, .001, .01, .1, 1, 10, 100, 1000]
-    divide_data(data, titles, c_svm, "svm")
+    #c_svm = [.00001, .0001, .001, .01, .1, 1, 10, 100, 1000]
+    #divide_data(data, titles, c_svm, "svm")
 
     #KNN
-    x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
-    divide_data(data, titles, x, "knn")
+    #x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    #divide_data(data, titles, x, "knn")
 
     
 
