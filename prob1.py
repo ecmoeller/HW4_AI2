@@ -1,3 +1,5 @@
+#!python3.6
+# -*- coding: utf-8 -*-
 
 import random
 import sys
@@ -52,7 +54,6 @@ def logistic_regression(train_data, train_labels, test_data, test_labels, hyperp
     else:
         clf = LogisticRegression(C=hyperparam, solver='lbfgs', multi_class='multinomial').fit(train_data, train_labels)
 
-    predicted_labels = clf.predict(test_data)
 
     mean_error_rate = 1 - clf.score(test_data, test_labels)
     
@@ -62,9 +63,8 @@ def logistic_regression(train_data, train_labels, test_data, test_labels, hyperp
 
 def perceptron(train_data, train_labels, test_data, test_labels, hyperparam, index):
 
-    clf = Perceptron(alpha=hyperparam, penalty="l2").fit(train_data, train_labels)
+    clf = Perceptron(tol=.001, max_iter=1000, alpha=hyperparam, penalty="l2").fit(train_data, train_labels)
     
-    predicted_labels = clf.predict(test_data)
     mean_error_rate = 1 - clf.score(test_data, test_labels)
 
 
@@ -75,9 +75,7 @@ def perceptron(train_data, train_labels, test_data, test_labels, hyperparam, ind
 
 def svm(train_data, train_labels, test_data, test_labels, hyperparam, index):
 
-    clf = LinearSVC(C=hyperparam).fit(train_data, train_labels)
-
-    predicted_labels = clf.predict(test_data)
+    clf = LinearSVC(C=hyperparam, max_iter=1000).fit(train_data, train_labels)
     
     mean_error_rate = 1 - clf.score(test_data, test_labels)
 
@@ -88,8 +86,6 @@ def knn(train_data, train_labels, test_data, test_labels, hyperparam, index):
     k = 6 * hyperparam + 1
 
     clf = KNeighborsClassifier(n_neighbors=k).fit(train_data, train_labels)
-
-    predicted_labels = clf.predict(test_data)
 
     mean_error_rate = 1 - clf.score(test_data, test_labels)
     
@@ -111,10 +107,7 @@ def divide_data(data, titles, hyperparams, algo):
 
             #Create window for cross validation
             total_len_data = len(dataset.data)
-            print("What is total_len_data", total_len_data)
-            print("Actual window value", total_len_data / 5)
             window = round(total_len_data / 5)
-            print("And what is window", window)
             initial_window = window
 
 
@@ -123,11 +116,8 @@ def divide_data(data, titles, hyperparams, algo):
 
             #5 fold cross validation
             for j in range(5):
-                #print(dataset.data)
                 test_data = np.array(dataset.data[int(window - initial_window): int(window)])
                 test_labels = np.array(dataset.target[int(window - initial_window): int(window)])
-
-                print("Length of test", len(test_data))
 
                 part1train_data = np.array(dataset.data[0 :int(window - initial_window)])
                 part2train_data = np.array(dataset.data[int(window):])
@@ -139,8 +129,6 @@ def divide_data(data, titles, hyperparams, algo):
                 train_labels = np.concatenate((part1train_labels, part2train_labels))
                 #train = dataset.data[0 :window - initial_window] + dataset.data[window:]
                 
-
-                print("Length of train", len(train_data))
 
                 algo_type = ""
                 #Call the correct algo
@@ -180,8 +168,6 @@ def divide_data(data, titles, hyperparams, algo):
             error_rates.append(mean_error_rate)
             stand_devs.append(stand_dev)
                 
-        print("What are the mean_error_rates", error_rates)
-        print("What are the stand_devs", stand_devs)
 
 
         #plot mean classiﬁcation error rate and standard deviation (as error bars) across the 5 folds
@@ -193,7 +179,6 @@ def divide_data(data, titles, hyperparams, algo):
 
 
 def main():
-    print("Main method")
 
     #Load all four datasets
     breast_cancer = datasets.load_breast_cancer()
@@ -211,16 +196,16 @@ def main():
     divide_data(data, titles, c_log_regress, "log")   
 
     #PERCEPTRON
-    #alpha = [.00001, .0001, .001, .01, .1, 1, 10, 100, 1000]
-    #divide_data(data, titles, alpha, "percep")
+    alpha = [.00001, .0001, .001, .01, .1, 1, 10, 100, 1000]
+    divide_data(data, titles, alpha, "percep")
 
     #SVM
-    #c_svm = [.00001, .0001, .001, .01, .1, 1, 10, 100, 1000]
-    #divide_data(data, titles, c_svm, "svm")
+    c_svm = [.00001, .0001, .001, .01, .1, 1, 10, 100, 1000]
+    divide_data(data, titles, c_svm, "svm")
 
     #KNN
-    #x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-    #divide_data(data, titles, x, "knn")
+    x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    divide_data(data, titles, x, "knn")
 
     
 
